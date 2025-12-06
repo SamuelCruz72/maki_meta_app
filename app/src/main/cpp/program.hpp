@@ -73,8 +73,22 @@ class Program {
   bool isBoolActionClicked(XrAction action, XrPath path) const;
   bool _vibrationActiveLeft = false;
   bool _vibrationActiveRight = false;
+  bool _xButtonPressed = false;
+  bool _aButtonPressed = false;
 
   float _currentIntensity = 1.0f;
+    bool isBoolActionPressed(XrAction action, XrPath path) const {
+        const XrActionStateGetInfo info = {
+                .type = XR_TYPE_ACTION_STATE_GET_INFO,
+                .action = action,
+                .subactionPath = path
+        };
+
+        XrActionStateBoolean state = {.type = XR_TYPE_ACTION_STATE_BOOLEAN};
+        xrGetActionStateBoolean(_xrSession, &info, &state);
+
+        return state.isActive && state.currentState;
+    }
   std::thread _commandThread;
   bool _stopCommandThread = false;
   ////// Haptics SDK

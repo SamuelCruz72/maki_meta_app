@@ -742,19 +742,50 @@ void Program::pollOpenXrActions() {
 
   //// [haptics_sdk] Respond to actions and trigger haptics
 
-  if (this->isBoolActionClicked(_xrActionStopHaptic, _xrPathLeft)) {
-      LOG_INFO("Botón X presionado - Desactivando haptics izquierdo");
-      _vibrationActiveRight = false;
-      checkHapticsSdk(haptics_sdk_player_stop(_hapticPlayerLeft));
-      NetworkBridge::sendHapticEvent("deactivated", "right", 1.0f);
-  }
+    bool xPressed = this->isBoolActionPressed(_xrActionStopHaptic, _xrPathLeft);
+    bool aPressed = this->isBoolActionPressed(_xrActionStopHaptic, _xrPathRight);
 
-  if (this->isBoolActionClicked(_xrActionStopHaptic, _xrPathRight)) {
-      LOG_INFO("Botón A presionado - Desactivando haptics derecho");
-      _vibrationActiveRight = false;
-      checkHapticsSdk(haptics_sdk_player_stop(_hapticPlayerRight));
-      NetworkBridge::sendHapticEvent("deactivated", "right", 1.0f);
-  }
+    // Botón X - Mantener cerrado mientras esté presionado
+    if (xPressed) {
+        if (!_xButtonPressed) {
+            _xButtonPressed = true;
+            LOG_INFO("Botón X presionado - CERRANDO GRIPPER");
+            // Usar la intensidad actual, no 10
+            NetworkBridge::sendHapticEvent("gripper", "close", _currentIntensity);
+        } else {
+            // Enviar señal continua con intensidad actual
+            static int xFrameCounter = 0;
+            if (xFrameCounter++ % 30 == 0) { // Cada ~0.5 segundos a 60fps
+                LOG_INFO("Botón X MANTENIDO - Cerrando con intensidad: %.1f", _currentIntensity);
+                NetworkBridge::sendHapticEvent("gripper", "hold_close", _currentIntensity);
+            }
+        }
+    } else if (_xButtonPressed) {
+        _xButtonPressed = false;
+        LOG_INFO("Botón X liberado - GRIPPER DETENIDO");
+        NetworkBridge::sendHapticEvent("gripper", "stop_close", 0.0f);
+    }
+
+    // Botón A - Mantener abierto mientras esté presionado
+    if (aPressed) {
+        if (!_aButtonPressed) {
+            _aButtonPressed = true;
+            LOG_INFO("Botón A presionado - ABRIENDO GRIPPER");
+            // Usar la intensidad actual, no 10
+            NetworkBridge::sendHapticEvent("gripper", "open", _currentIntensity);
+        } else {
+            // Enviar señal continua con intensidad actual
+            static int aFrameCounter = 0;
+            if (aFrameCounter++ % 30 == 0) { // Cada ~0.5 segundos a 60fps
+                LOG_INFO("Botón A MANTENIDO - Abriendo con intensidad: %.1f", _currentIntensity);
+                NetworkBridge::sendHapticEvent("gripper", "hold_open", _currentIntensity);
+            }
+        }
+    } else if (_aButtonPressed) {
+        _aButtonPressed = false;
+        LOG_INFO("Botón A liberado - GRIPPER DETENIDO");
+        NetworkBridge::sendHapticEvent("gripper", "stop_open", 0.0f);
+    }
   //// [haptics_sdk]
 }
 
